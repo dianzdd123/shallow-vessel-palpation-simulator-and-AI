@@ -316,7 +316,11 @@ def plot_pr(plt, precision, recall, all_probs, all_labels, ap, out_path,
 # layout - the four share one axis) lines up exactly and the panels without it
 # are simply narrower. Set explicitly instead of via tight_layout, which would
 # stretch the axes to fill whatever the y-axis text left over.
-_PANEL_AXES_W, _PANEL_AXES_H = 5.2, 4.85   # axes box
+# The axes box is sized so that the row of four (one with the y-axis text)
+# is 23.8 in wide: set at the ECCV manuscript's 12.2 cm text width, that is a
+# scale of ~0.203, and the 30 pt text prints at ~6.1 pt -- above the template's
+# 6 pt minimum for lettering in figures (it was 5.2 x 4.85 in, i.e. 5.8 pt).
+_PANEL_AXES_W, _PANEL_AXES_H = 4.9, 4.57   # axes box
 _PANEL_LEFT_WITH_Y = 1.6                   # room for the y label + tick captions
 _PANEL_LEFT_NO_Y = 0.40                    # half of the "0.0" tick caption
 _PANEL_RIGHT = 0.35
@@ -441,7 +445,7 @@ def plot_axis_label(plt, text, out_path):
 
 
 def plot_curve_legend(plt, out_path, threshold_label="Mean decision threshold",
-                      baseline_label="random model (precision = positive rate)"):
+                      baseline_label="random model\n(precision = positive rate)"):
     """The row's shared legend as a figure of its own, one horizontal line.
 
     Left: the threshold colourbar over the fixed [0, 1] scale every curve in
@@ -450,18 +454,21 @@ def plot_curve_legend(plt, out_path, threshold_label="Mean decision threshold",
     captioned `baseline_label`. It exists so a row of mean-curve panels
     (`plot_mean_curve()`, which draws neither a colourbar nor a baseline
     caption) can carry ONE legend, set above the row in the manuscript, instead
-    of four copies. Fonts are the mean-curve panels' (1.5x the single-model
-    figures'), so it reads at the same size as the panels it sits over. Placed
-    by hand in inches and cropped to content on save.
+    of four copies. Fonts are the mean-curve panels' own size (not smaller:
+    the manuscript prints them at ~6 pt, its minimum), so it reads at the same
+    size as the panels it sits over. Each item is placed after the measured
+    width of the text before it, and the page is cropped to content on save.
     """
     fig_w, fig_h = 16.5, 1.4
     fig = plt.figure(figsize=(fig_w, fig_h))
-    label_fs, tick_fs = _MEAN_FONTSIZE - 3, _MEAN_FONTSIZE - 6
+    label_fs = tick_fs = _MEAN_FONTSIZE
+    renderer = fig.canvas.get_renderer()
 
     # --- left entry: caption, then the horizontal colourbar with ticks below.
-    fig.text(0.0, 0.62, threshold_label, fontsize=label_fs, fontweight="bold",
-             ha="left", va="center")
-    cax = fig.add_axes([5.95 / fig_w, 0.5, 4.6 / fig_w, 0.32])
+    text = fig.text(0.0, 0.62, threshold_label, fontsize=label_fs, fontweight="bold",
+                    ha="left", va="center")
+    x = text.get_window_extent(renderer).x1 / fig.dpi + 0.35   # inches
+    cax = fig.add_axes([x / fig_w, 0.5, 4.6 / fig_w, 0.32])
     cbar = fig.colorbar(
         ScalarMappable(norm=THRESHOLD_NORM, cmap=THRESHOLD_CMAP), cax=cax,
         orientation="horizontal", ticks=[0.0, 0.25, 0.5, 0.75, 1.0],
@@ -472,13 +479,14 @@ def plot_curve_legend(plt, out_path, threshold_label="Mean decision threshold",
     cbar.outline.set_linewidth(3.0)
 
     # --- right entry: a sample of the baseline line, then its caption.
-    lax = fig.add_axes([11.35 / fig_w, 0.5, 1.5 / fig_w, 0.32])
+    x += 4.6 + 0.8
+    lax = fig.add_axes([x / fig_w, 0.5, 1.5 / fig_w, 0.32])
     lax.axis("off")
     lax.set_xlim(0, 1)
     lax.set_ylim(0, 1)
     lax.axhline(0.5, **BASELINE_STYLE)
-    fig.text(13.05 / fig_w, 0.62, baseline_label, fontsize=label_fs,
-             fontweight="bold", ha="left", va="center")
+    fig.text((x + 1.7) / fig_w, 0.62, baseline_label, fontsize=label_fs,
+             fontweight="bold", ha="left", va="center", linespacing=1.0)
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     finish_plot(plt, out_path, format="pdf", dpi=300, bbox_inches="tight",
