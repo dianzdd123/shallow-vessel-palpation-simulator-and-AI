@@ -47,3 +47,11 @@ saved_models_legacy/**/*.pickle
 # tracked; the per-data-point overlay runs they can also produce are not (thousands of
 # images, hundreds of MB, regenerable with ./docker/reproduce_analysis.sh --with-overlays).
 analysis/overlays/
+
+# Local development artefacts and credentials
+*.py[cod]
+.venv/
+.pytest_cache/
+.env
+.env.*
+!.env.example
